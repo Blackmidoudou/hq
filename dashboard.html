@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>红旗小工具</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- 先加载外部 JS 文件 -->
+    <script src="maintenanceCalculator.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        /* 基础样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-family: "Microsoft YaHei", sans-serif;  /* 使用微软雅黑字体 */
+            display: flex;
+            background: #f5f5f5;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 200px;
+            background: #001529;  /* 深色背景 */
+            height: 100vh;        /* 全屏高度 */
+            color: #fff;
+        }
+
+        /* 菜单项样式 */
+        .menu-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;  /* 过渡动画 */
+            position: relative;
+            color: rgba(255, 255, 255, 0.65);
+            border-left: 3px solid transparent;  /* 左边框指示器 */
+        }
+
+        /* 菜单项悬停效果 */
+        .menu-item:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            border-left-color: #c41e3a;
+        }
+
+        /* 菜单项激活状态 */
+        .menu-item.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            border-left-color: #c41e3a;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+            transform: translateY(1px);
+        }
+
+        /* 主内容区域样式 */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            background: #fff;
+            margin: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 面包屑导航样式 */
+        .breadcrumb {
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        .breadcrumb span {
+            margin: 0 8px;
+            color: #999;
+        }
+
+        /* 上传区域样式 */
+        .upload-section {
+            margin-bottom: 30px;
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+
+        /* 上传按钮样式 */
+        .upload-btn {
+            background: #c41e3a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .upload-btn:hover {
+            background: #d4213f;
+        }
+
+        /* 文件名显示样式 */
+        .file-name {
+            display: block;
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* 分隔线样式 */
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            color: #666;
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: #ddd;
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
+        }
+
+        /* 保养记录区域样式 */
+        .maintenance-records {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .maintenance-records h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        /* 记录容器样式 */
+        .records-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        /* 记录项样式 */
+        .record-item {
+            display: flex;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+        }
+
+        .record-item:last-child {
+            border-bottom: none;
+        }
+
+        /* 记录编号样式 */
+        .record-number {
+            width: 50px;
+            font-weight: bold;
+            color: #c41e3a;
+        }
+
+        /* 记录日期样式 */
+        .record-date {
+            flex: 1;
+        }
+
+        /* 记录里程样式 */
+        .record-mileage {
+            flex: 1;
+            text-align: right;
+        }
+
+        /* 空记录提示样式 */
+        .empty-records {
+            padding: 20px;
+            text-align: center;
+            color: #999;
+        }
+
+        /* 记录表头样式 */
+        .records-header {
+            display: flex;
+            background: #f5f5f5;
+            padding: 12px 15px;
+            font-weight: bold;
+            border-bottom: 2px solid #ddd;
+        }
+
+        /* 表头项样式 */
+        .header-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        /* 记录单元格样式 */
+        .record-cell {
+            flex: 1;
+            text-align: center;
+        }
+
+        /* 超期状态样式 */
+        .overdue {
+            color: #c41e3a;
+            font-weight: bold;
+        }
+
+        /* 正常状态样式 */
+        .normal {
+            color: #52c41a;
+        }
+
+        /* 记录主体区域样式 */
+        .records-body {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* 表头和单元格通用样式 */
+        .header-item, .record-cell {
+            flex: 1;
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        /* 保养次数列宽度设置 */
+        .header-item:first-child, .record-cell:first-child {
+            flex: 0.5;
+        }
+
+        /* 维修类型列宽度设置 */
+        .header-item:nth-child(2), .record-cell:nth-child(2) {
+            flex: 1;
+        }
+
+        /* 计算器容器样式 */
+        .calculator-container {
+            display: flex;
+            gap: 20px;
+            max-width: 100%;
+            padding: 20px;
+        }
+
+        /* 左侧面板样式 */
+        .left-panel {
+            flex: 0 0 300px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 右侧面板样式 */
+        .right-panel {
+            flex: 1;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        /* 表单组样式 */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+        }
+
+        /* 表单控件样式 */
+        select, input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        /* 单选按钮组样式 */
+        .radio-group {
+            display: inline-block;
+        }
+
+        .radio-group input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        .radio-group label {
+            margin-right: 15px;
+        }
+
+        /* 计算按钮样式 */
+        .calculate-btn {
+            background-color: #f5222d;  /* 改为红色主题 */
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s;
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
+            min-width: 120px;
+            margin: 10px;
+        }
+
+        .calculate-btn:hover {
+            background-color: #ff4d4f;  /* 更新悬停颜色为浅红色 */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .calculate-btn:active {
+            background-color: #cf1322;  /* 更新点击颜色为深红色 */
+            transform: translateY(0);
+        }
+
+        .calculate-btn:disabled {
+            background-color: #d9d9d9;
+            cursor: not-allowed;
+            color: rgba(0, 0, 0, 0.25);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .button-container {
+            margin-top: 20px;
+            margin-bottom: 20px;    /* 增加下边距 */
+            text-align: center;
+            padding: 10px 0;        /* 增加容器内边距 */
+        }
+
+        /* 固定表头样式 */
+        .records-header {
+            position: sticky;
+            top: 0;
+            background: #f5f5f5;
+            z-index: 1;
+        }
+
+        /* 记录项悬停效果 */
+        .record-item:hover {
+            background: #f9f9f9;
+        }
+
+        /* 车辆信息样式 */
+        .vehicle-info {
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* 信息项样式 */
+        .info-item {
+            margin-bottom: 10px;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            color: #333;
+            padding: 5px 0;
+            word-break: break-all;
+        }
+
+        /* 记录头部栏样式 */
+        .records-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 15px;
+        }
+
+        .records-header-bar h3 {
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 上传区域样式优化 */
+        .upload-section {
+            margin: 0;
+            padding: 0;
+            border: none;
+            background: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-btn {
+            margin: 0;
+            height: 32px;
+            line-height: 32px;
+            padding: 0 15px;
+        }
+
+        .file-name {
+            margin: 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="menu-item" id="maintenance-calculator">保养记录计算器</div>
+        <div class="menu-item" id="early-maintenance-calculator">提前保养计算器</div>
+    </div>
+
+    <div class="main-content">
+        <div class="breadcrumb">
+            首页 <span>/</span> <span id="current-page">概览</span>
+        </div>
+        <div id="content-area">
+            <!-- 内容区域 -->
+            请选择左侧功能
+        </div>
+    </div>
+
+    <!-- 将主脚本移到 body 末尾 -->
+    <script>
+        // 将 parseMileage 函数移到全局作用域
+        function parseMileage(mileageStr) {
+            if (!mileageStr) return 0;
+            
+            // 移除所有非数字字符（保留小数点）
+            let cleanStr = mileageStr.toString().replace(/[^\d.]/g, '');
+            
+            // 如果有多个小数点，只保留第一个
+            if (cleanStr.indexOf('.') !== cleanStr.lastIndexOf('.')) {
+                cleanStr = cleanStr.replace(/\./g, function(match, offset, string) {
+                    return offset === string.indexOf('.') ? match : '';
+                });
+            }
+            
+            // 转换为数字
+            const mileage = parseFloat(cleanStr);
+            
+            // 如果转换结果不是有效数字，返回0
+            return isNaN(mileage) ? 0 : Math.round(mileage);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取页面元素
+            const maintenanceCalc = document.getElementById('maintenance-calculator');        // 保养计算器菜单项
+            const earlyMaintenanceCalc = document.getElementById('early-maintenance-calculator'); // 提前保养计算器菜单项
+            const currentPage = document.getElementById('current-page');                      // 当前页面标题
+            const contentArea = document.getElementById('content-area');                      // 内容区域
+
+            // 移除所有菜单项的激活状态
+            function removeAllActive() {
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+            }
+
+            // 添加保养计算器菜单项的点击事件
+            maintenanceCalc.addEventListener('click', function() {
+                // 更新菜单激活状态
+                removeAllActive();
+                this.classList.add('active');
+                currentPage.textContent = '保养记录计算器';
+                
+                // 更新内容区域的HTML
+                contentArea.innerHTML = `
+                    <div class="calculator-container">
+                        <!-- 左侧面板：表单区域 -->
+                        <div class="left-panel">
+                            <!-- 车辆类型选择 -->
+                            <div class="form-group">
+                                <label>车辆类型：</label>
+                                <div class="radio-group">
+                                    <input type="radio" name="vehicleType" value="fuel" id="typeFuel" checked>
+                                    <label for="typeFuel">燃油车</label>
+                                    <input type="radio" name="vehicleType" value="electric" id="typeElectric">
+                                    <label for="typeElectric">电动车</label>
+                                </div>
+                            </div>
+
+                            <!-- 首保里程选择 -->
+                            <div class="form-group" id="mileageGroup">
+                                <label>首保里程：</label>
+                                <div id="fuelMileageOptions">
+                                    <input type="radio" name="mileage" value="5000" id="mileage5000" checked>
+                                    <label for="mileage5000">5000公里</label>
+                                    <input type="radio" name="mileage" value="10000" id="mileage10000">
+                                    <label for="mileage10000">10000公里</label>
+                                </div>
+                                <div id="electricMileageOptions" style="display: none;">
+                                    <input type="radio" name="mileage" value="20000" id="mileage20000" checked>
+                                    <label for="mileage20000">20000公里</label>
+                                </div>
+                            </div>
+
+                            <!-- 车辆信息显示区域 -->
+                            <div class="vehicle-info">
+                                <div class="info-item">
+                                    <label>销售日期：</label>
+                                    <div id="saleDateDisplay" class="info-value">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <label>车牌号：</label>
+                                    <div id="plateNumberDisplay" class="info-value">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <label>VIN：</label>
+                                    <div id="vinDisplay" class="info-value">-</div>
+                                </div>
+                            </div>
+
+                            <!-- 计算按钮 -->
+                            <div class="button-container">
+                                <button class="calculate-btn" id="calculateBtn">开始计算</button>
+                            </div>
+                        </div>
+
+                        <!-- 右侧面板：记录显示区域 -->
+                        <div class="right-panel">
+                            <div class="maintenance-records">
+                                <!-- 记录列表头部 -->
+                                <div class="records-header-bar">
+                                    <h3>保养记录列表</h3>
+                                    <div class="upload-excel-section">
+                                        <input type="file" id="excelFileUpload" accept=".xlsx, .xls" style="display: none;">
+                                        <button id="uploadExcelBtn" class="upload-btn">上传Excel文件</button>
+                                        <span id="uploadedFileName" class="file-name"></span>
+                                    </div>
+                                </div>
+                                <!-- 记录列表容器 -->
+                                <div class="records-container" id="recordsList">
+                                    <!-- 记录将通过JavaScript动态添加 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // 获取表单元素
+                const vehicleTypeRadios = document.getElementsByName('vehicleType');
+                const mileageGroup = document.getElementById('mileageGroup');     // 里程选项容器
+                const calculateBtn = document.getElementById('calculateBtn');         // 计算按钮
+                const result = document.getElementById('result');                     // 结果显示区域
+
+                // 车辆类型切换处理
+                const fuelMileageOptions = document.getElementById('fuelMileageOptions');
+                const electricMileageOptions = document.getElementById('electricMileageOptions');
+
+                vehicleTypeRadios.forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        if (this.value === 'fuel') {
+                            fuelMileageOptions.style.display = 'block';
+                            electricMileageOptions.style.display = 'none';
+                            // 默认选中5000公里
+                            document.getElementById('mileage5000').checked = true;
+                        } else {
+                            fuelMileageOptions.style.display = 'none';
+                            electricMileageOptions.style.display = 'block';
+                            // 电动车只有20000公里选项
+                            document.getElementById('mileage20000').checked = true;
+                        }
+                    });
+                });
+
+                // 修改计算按钮点击事件处理
+                calculateBtn.addEventListener('click', function() {
+                    // 验证计算函数是否存在
+                    if (typeof window.calculateMaintenance !== 'function') {
+                        console.error('计算函数未加载');
+                        alert('计算函数未正确加载，请刷新页面重试');
+                        return;
+                    }
+
+                    // 获取选中的车辆类型
+                    const selectedVehicleType = document.querySelector('input[name="vehicleType"]:checked').value;
+                    const mileageRadios = document.getElementsByName('mileage');
+                    
+                    // 获取选中的里程值
+                    let selectedMileage = '';
+                    for (let radio of mileageRadios) {
+                        if (radio.checked) {
+                            selectedMileage = radio.value;
+                            break;
+                        }
+                    }
+
+                    // 遍历所有记录项进行计算
+                    const recordItems = document.querySelectorAll('.record-item');
+                    recordItems.forEach((item, index) => {
+                        const cells = item.querySelectorAll('.record-cell');
+                        const maintenanceType = cells[1].textContent;
+                        const maintenanceDate = cells[2].textContent;
+                        const mileage = parseMileage(cells[3].textContent);
+
+                        // 跳过无效日期的记录
+                        if (maintenanceDate === '-') return;
+
+                        // 获取上一次保养记录
+                        let previousMaintenanceDate = null;
+                        let previousMileage = null;
+                        if (index > 0) {
+                            const prevCells = recordItems[index - 1].querySelectorAll('.record-cell');
+                            previousMaintenanceDate = prevCells[2].textContent;
+                            previousMileage = parseMileage(prevCells[3].textContent);
+                        }
+
+                        // 准备计算参数
+                        const params = {
+                            vehicleType: selectedVehicleType,
+                            selectedMileage: selectedMileage,
+                            maintenanceDate: maintenanceDate,
+                            currentMileage: mileage,
+                            maintenanceCount: index + 1,
+                            saleDate: document.getElementById('saleDateDisplay').textContent,
+                            previousMaintenanceDate: previousMaintenanceDate,
+                            previousMileage: previousMileage
+                        };
+
+                        try {
+                            // 调用计算函数并更新显示
+                            const result = window.calculateMaintenance(params);
+                            cells[4].textContent = result.message;
+                            cells[4].className = `record-cell ${result.status}`;
+                        } catch (error) {
+                            console.error('计算错误:', error);
+                            cells[4].textContent = '计算错误';
+                            cells[4].className = 'record-cell error';
+                        }
+                    });
+                });
+
+                // 添加Excel文件上传功能
+                const uploadBtn = document.getElementById('uploadExcelBtn');
+                const excelFile = document.getElementById('excelFileUpload');
+                const fileName = document.getElementById('uploadedFileName');
+
+                // 上传按钮点击事件
+                uploadBtn.addEventListener('click', () => {
+                    excelFile.click();
+                });
+
+                // 文件选择变化事件
+                excelFile.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        fileName.textContent = `已选择文件: ${file.name}`;
+                        
+                        try {
+                            // 读取Excel文件
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                try {
+                                    const data = e.target.result;
+                                    const workbook = XLSX.read(data, {
+                                        type: 'binary',
+                                        cellDates: true
+                                    });
+                                    
+                                    const firstSheetName = workbook.SheetNames[0];
+                                    const worksheet = workbook.Sheets[firstSheetName];
+                                    
+                                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                                        raw: false,
+                                        defval: '',
+                                        header: 'A'
+                                    });
+
+                                    // 确保有数据
+                                    if (!jsonData || jsonData.length === 0) {
+                                        throw new Error('Excel 文件中没有数据');
+                                    }
+
+                                    // 查找表头行并映射列
+                                    const headerRow = jsonData[0];
+                                    const headerMapping = {};
+                                    
+                                    Object.keys(headerRow).forEach(key => {
+                                        const value = String(headerRow[key] || '').trim();
+                                        if (value.includes('维修类型')) {
+                                            headerMapping.maintainType = key;
+                                        } else if (value.includes('开单日期')) {
+                                            headerMapping.orderDate = key;
+                                        } else if (value.includes('行驶里程') || value.includes('进场里程')) {
+                                            headerMapping.mileage = key;
+                                        } else if (value.includes('销售日期') || value.includes('车辆销售日期')) {
+                                            headerMapping.saleDate = key;
+                                        } else if (value.includes('车牌号')) {
+                                            headerMapping.plateNumber = key;
+                                        } else if (value.includes('VIN')) {
+                                            headerMapping.vin = key;
+                                        }
+                                    });
+
+                                    // 验证必要的列是否存在
+                                    if (!headerMapping.maintainType || !headerMapping.orderDate || !headerMapping.mileage) {
+                                        throw new Error('Excel 文件缺少必要的列（维修类型、开单日期或里程）');
+                                    }
+
+                                    // 日期格式化函数
+                                    function formatDateToYMD(dateString) {
+                                        if (!dateString) return '-';
+                                        try {
+                                            let date;
+                                            if (dateString instanceof Date) {
+                                                date = dateString;
+                                            } else {
+                                                date = new Date(dateString);
+                                            }
+                                            
+                                            if (isNaN(date.getTime())) return '-';
+                                            
+                                            const year = date.getFullYear();
+                                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                                            const day = String(date.getDate()).padStart(2, '0');
+                                            
+                                            return `${year}-${month}-${day}`;
+                                        } catch {
+                                            return '-';
+                                        }
+                                    }
+
+                                    // 处理数据
+                                    const maintenanceRecords = jsonData.slice(1)
+                                        .filter(row => {
+                                            const maintainType = String(row[headerMapping.maintainType] || '').trim();
+                                            return maintainType === '免费保养' || maintainType === '保养';
+                                        })
+                                        .map(row => ({
+                                            '维修类型': row[headerMapping.maintainType] || '',
+                                            '开单日期': formatDateToYMD(row[headerMapping.orderDate]),
+                                            '进场里程': parseMileage(row[headerMapping.mileage]),
+                                            '销售日期': formatDateToYMD(row[headerMapping.saleDate]),
+                                            '车牌号': row[headerMapping.plateNumber] || '',
+                                            'VIN': row[headerMapping.vin] || ''
+                                        }))
+                                        .filter(record => record['开单日期'] !== '-' && record['进场里程'] !== 0);
+
+                                    // 去重处理
+                                    const uniqueRecords = maintenanceRecords.reduce((acc, current) => {
+                                        if (!acc.some(item => 
+                                            item['开单日期'] === current['开单日期'] && 
+                                            item['进场里程'] === current['进场里程']
+                                        )) {
+                                            acc.push(current);
+                                        }
+                                        return acc;
+                                    }, []);
+
+                                    // 按日期排序
+                                    uniqueRecords.sort((a, b) => {
+                                        const dateA = new Date(a['开单日期']);
+                                        const dateB = new Date(b['开单日期']);
+                                        return dateA - dateB;
+                                    });
+
+                                    // 更新显示
+                                    updateVehicleInfo(uniqueRecords);
+                                    displayMaintenanceRecords(uniqueRecords);
+
+                                } catch (error) {
+                                    console.error('Excel处理错误:', error);
+                                    alert(error.message || 'Excel文件格式不正确或数据无效');
+                                }
+                            };
+                            
+                            reader.readAsBinaryString(file);
+                            
+                        } catch (error) {
+                            console.error('文件读取错误:', error);
+                            alert('文件读取失败');
+                        }
+                    }
+                });
+
+                // 显示保养记录的函数
+                function displayMaintenanceRecords(records) {
+                    const recordsList = document.getElementById('recordsList');
+                    
+                    // 创建表头
+                    recordsList.innerHTML = `
+                        <div class="records-header">
+                            <div class="header-item">保养次数</div>
+                            <div class="header-item">维修类型</div>
+                            <div class="header-item">开单日期</div>
+                            <div class="header-item">进场里程(公里)</div>
+                            <div class="header-item">计算结果</div>
+                        </div>
+                        <div class="records-body" id="recordsBody"></div>
+                    `;
+
+                    const recordsBody = document.getElementById('recordsBody');
+                    const totalRecords = Array(30).fill(null);
+                    
+                    // 填充记录数据
+                    records.forEach((record, index) => {
+                        if (index < 30) {
+                            const mileage = record['进场里程'];
+                            record['进场里程'] = mileage.toString();
+                            totalRecords[index] = record;
+                        }
+                    });
+
+                    // 创建记录项
+                    totalRecords.forEach((record, index) => {
+                        const recordItem = document.createElement('div');
+                        recordItem.className = 'record-item';
+
+                        if (record) {
+                            const mileage = record['进场里程'];
+                            recordItem.innerHTML = `
+                                <div class="record-cell">第${index + 1}次</div>
+                                <div class="record-cell">${record['维修类型'] || '-'}</div>
+                                <div class="record-cell">${record['开单日期']}</div>
+                                <div class="record-cell">${mileage || '-'}</div>
+                                <div class="record-cell">-</div>
+                            `;
+                        } else {
+                            recordItem.innerHTML = `
+                                <div class="record-cell">第${index + 1}次</div>
+                                <div class="record-cell">-</div>
+                                <div class="record-cell">-</div>
+                                <div class="record-cell">-</div>
+                                <div class="record-cell">-</div>
+                            `;
+                        }
+
+                        recordsBody.appendChild(recordItem);
+                    });
+                }
+
+                // 更新车辆信息显示的函数
+                function updateVehicleInfo(records) {
+                    if (records && records.length > 0) {
+                        const firstRecord = records[0];
+                        document.getElementById('saleDateDisplay').textContent = firstRecord['销售日期'] || '-';
+                        document.getElementById('plateNumberDisplay').textContent = firstRecord['车牌号'] || '-';
+                        document.getElementById('vinDisplay').textContent = firstRecord['VIN'] || '-';
+                    }
+                }
+            });
+
+            // 提前保养计算器菜单项点击事件
+            earlyMaintenanceCalc.addEventListener('click', function() {
+                removeAllActive();
+                this.classList.add('active');
+                currentPage.textContent = '提前保养计算器';
+                contentArea.innerHTML = `
+                    <h2>提前保养计算器</h2>
+                    <!-- 提前保养计算器的具体内容待添加 -->
+                `;
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>红旗伙伴办公系统</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: #000;
+            font-family: "Microsoft YaHei", sans-serif;
+            overflow: hidden;
+        }
+
+        .login-container {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            background: url('背景.jpeg') no-repeat center center;
+            background-size: cover;
+            position: relative;
+        }
+
+        .login-left {
+            width: 500px;
+            padding: 40px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: flex-end;
+            padding-bottom: 100px;
+        }
+
+        .login-form {
+            width: 400px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .login-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin: 15px 0;
+        }
+
+        .remember-password {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #c41e3a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .login-btn:hover {
+            background-color: #d4213f;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-left">
+            <div class="login-form">
+                <form onsubmit="return validateLogin(event)">
+                    <div class="form-group">
+                        <input type="text" id="username" placeholder="用户名/手机号登录" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="password" placeholder="密码" required>
+                    </div>
+                    <div class="login-options">
+                        <label class="remember-password">
+                            <input type="checkbox"> 记住密码
+                        </label>
+                        <a href="#" style="color: rgba(255, 255, 255, 0.6); text-decoration: none;">忘记密码？</a>
+                    </div>
+                    <button type="submit" class="login-btn">登 录</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function validateLogin(event) {
+        event.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        if (username === 'admin' && password === 'hongqi888') {
+            window.location.href = 'dashboard.html';
+            return false;
+        } else {
+            alert('用户名或密码错误！');
+            return false;
+        }
+    }
+    </script>
+</body>
+</html>

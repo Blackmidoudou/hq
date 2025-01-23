@@ -1,0 +1,35 @@
+/* 基础样式 */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+/* 记录项样式 */
+.record-item {
+    display: flex;
+    margin-bottom: 5px;
+}
+
+.record-cell {
+    padding: 8px;
+    border: 1px solid #ddd;
+    flex: 1;
+}
+
+/* 状态样式 */
+.normal {
+    background-color: #e8f5e9;
+}
+
+.warning {
+    background-color: #fff3e0;
+}
+
+.overdue {
+    background-color: #ffebee;
+}
+
+.error {
+    background-color: #ffcdd2;
+} 
