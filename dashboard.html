@@ -135,9 +135,9 @@
 
         /* 保养记录区域样式 */
         .maintenance-records {
-            margin-top: 30px;
+            margin-top: -10px;  /* 向上移动 */
             border-top: 1px solid #eee;
-            padding-top: 20px;
+            padding-top: 10px;
         }
 
         .maintenance-records h3 {
@@ -423,6 +423,41 @@
             margin: 0;
             font-size: 12px;
         }
+
+        /* 移除整体容器的超期样式 */
+        .form-container.overdue {
+            border-color: #d9d9d9;  /* 恢复默认边框颜色 */
+            background-color: #fff;  /* 恢复默认背景色 */
+        }
+
+        /* 添加关键字段的超期样式 */
+        .form-group.overdue label {
+            color: #ff4d4f;
+            font-weight: 500;
+        }
+
+        .form-group.overdue input,
+        .form-group.overdue select {
+            border-color: #ff4d4f;
+            background-color: #fff2f0;
+        }
+
+        /* 添加输入框焦点样式 */
+        .form-group.overdue input:focus,
+        .form-group.overdue select:focus {
+            border-color: #ff7875;
+            box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+            outline: none;
+        }
+
+        /* 保持原有的结果显示样式 */
+        #result {
+            display: inline-block;
+            min-width: 100px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -530,6 +565,37 @@
                                     <label>VIN：</label>
                                     <div id="vinDisplay" class="info-value">-</div>
                                 </div>
+                            </div>
+
+                            <!-- 在开始计算按钮下方添加新的输入框 -->
+                            <div class="form-group">
+                                <label>申请背景：</label>
+                                <textarea 
+                                    id="applicationBackground" 
+                                    placeholder="请简要描述申请背景和原因" 
+                                    rows="3" 
+                                    style="width: 100%; 
+                                           padding: 10px; 
+                                           margin-top: 10px; 
+                                           border: 1px solid #ddd; 
+                                           border-radius: 4px; 
+                                           resize: vertical;"
+                                ></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>申请说明：</label>
+                                <textarea 
+                                    id="applicationDescription" 
+                                    placeholder="请详细说明申请的具体情况" 
+                                    rows="3" 
+                                    style="width: 100%; 
+                                           padding: 10px; 
+                                           margin-top: 10px; 
+                                           border: 1px solid #ddd; 
+                                           border-radius: 4px; 
+                                           resize: vertical;"
+                                ></textarea>
                             </div>
 
                             <!-- 计算按钮 -->
@@ -873,6 +939,55 @@
                 `;
             });
         });
+
+        // 修改更新结果的函数
+        function updateResult(result) {
+            const resultElement = document.getElementById('result');
+            
+            // 获取需要高亮的关键字段
+            const keyFields = [
+                'maintenanceCount',    // 保养次数
+                'vehicleType',         // 维修类型
+                'maintenanceDate',     // 开单日期
+                'currentMileage'       // 进场里程
+            ];
+            
+            if (!resultElement) {
+                console.error('找不到结果显示元素');
+                return;
+            }
+
+            // 首先清除所有字段的超期样式
+            document.querySelectorAll('.form-group').forEach(group => {
+                group.classList.remove('overdue');
+            });
+
+            resultElement.textContent = result.message;
+            resultElement.style.cssText = result.style;
+            
+            switch(result.status) {
+                case 'error':
+                    resultElement.style.backgroundColor = '#fff1f0';
+                    resultElement.style.border = '1px solid #ffccc7';
+                    break;
+                case 'overdue':
+                    resultElement.style.backgroundColor = '#fff2f0';
+                    resultElement.style.border = '1px solid #ffccc7';
+                    
+                    // 为关键字段添加超期样式
+                    keyFields.forEach(fieldId => {
+                        const fieldGroup = document.getElementById(fieldId)?.closest('.form-group');
+                        if (fieldGroup) {
+                            fieldGroup.classList.add('overdue');
+                        }
+                    });
+                    break;
+                case 'normal':
+                    resultElement.style.backgroundColor = '#f6ffed';
+                    resultElement.style.border = '1px solid #b7eb8f';
+                    break;
+            }
+        }
     </script>
 </body>
 </html> 
