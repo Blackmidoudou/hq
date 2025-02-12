@@ -567,7 +567,24 @@
                                 </div>
                             </div>
 
-                            <!-- 在开始计算按钮下方添加新的输入框 -->
+                            <!-- 在申请背景上方添加新的显示字段区域 -->
+                            <div id="additionalInfoSection" style="
+                                margin-bottom: 15px; 
+                                padding: 0; 
+                                background-color: transparent; 
+                                border: none;
+                            ">
+                                <div id="warrantyStatusDisplay" style="
+                                    color: red;
+                                    font-weight: bold;
+                                    line-height: 1.5;
+                                    font-size: 14px;
+                                ">
+                                    <!-- 这里可以动态插入保修状态信息 -->
+                                </div>
+                            </div>
+
+                            <!-- 申请背景输入框 -->
                             <div class="form-group">
                                 <label>申请背景：</label>
                                 <textarea 
@@ -675,6 +692,8 @@
 
                     // 遍历所有记录项进行计算
                     const recordItems = document.querySelectorAll('.record-item');
+                    let lastMaintenanceDate = null;
+
                     recordItems.forEach((item, index) => {
                         const cells = item.querySelectorAll('.record-cell');
                         const maintenanceType = cells[1].textContent;
@@ -710,12 +729,20 @@
                             const result = window.calculateMaintenance(params);
                             cells[4].textContent = result.message;
                             cells[4].className = `record-cell ${result.status}`;
+
+                            // 更新最后一次保养日期
+                            if (maintenanceDate !== '-') {
+                                lastMaintenanceDate = maintenanceDate;
+                            }
                         } catch (error) {
                             console.error('计算错误:', error);
                             cells[4].textContent = '计算错误';
                             cells[4].className = 'record-cell error';
                         }
                     });
+
+                    // 更新保修状态显示
+                    updateWarrantyStatusDisplay(lastMaintenanceDate);
                 });
 
                 // 添加Excel文件上传功能
@@ -845,6 +872,13 @@
                                     // 更新显示
                                     updateVehicleInfo(uniqueRecords);
                                     displayMaintenanceRecords(uniqueRecords);
+
+                                    if (uniqueRecords.length > 0) {
+                                        const lastMaintenanceDate = uniqueRecords[uniqueRecords.length - 1]['开单日期'];
+                                        
+                                        // 更新保修状态显示
+                                        updateWarrantyStatusDisplay(lastMaintenanceDate);
+                                    }
 
                                 } catch (error) {
                                     console.error('Excel处理错误:', error);
@@ -986,6 +1020,59 @@
                     resultElement.style.backgroundColor = '#f6ffed';
                     resultElement.style.border = '1px solid #b7eb8f';
                     break;
+            }
+        }
+
+        function checkLifetimeWarranty(lastMaintenanceDate) {
+            if (!lastMaintenanceDate || lastMaintenanceDate === '-') return false;
+
+            // 将最后一次保养日期转换为日期对象
+            const lastMaintenance = new Date(lastMaintenanceDate);
+            
+            // 计算13个月后的日期
+            const warrantyExpirationDate = new Date(lastMaintenance);
+            warrantyExpirationDate.setMonth(warrantyExpirationDate.getMonth() + 13);
+            
+            // 获取当前日期
+            const currentDate = new Date();
+            
+            // 返回是否超过保修期
+            return currentDate > warrantyExpirationDate;
+        }
+
+        function updateWarrantyStatusDisplay(lastMaintenanceDate) {
+            const warrantyStatusDisplay = document.getElementById('warrantyStatusDisplay');
+            
+            if (lastMaintenanceDate && lastMaintenanceDate !== '-') {
+                const hasLostWarranty = checkLifetimeWarranty(lastMaintenanceDate);
+                
+                if (hasLostWarranty) {
+                    // 计算13个月后的具体日期
+                    const lastMaintenance = new Date(lastMaintenanceDate);
+                    const warrantyExpirationDate = new Date(lastMaintenance);
+                    warrantyExpirationDate.setMonth(warrantyExpirationDate.getMonth() + 13);
+                    
+                    // 格式化到期日期
+                    const formattedExpirationDate = `${warrantyExpirationDate.getFullYear()}-${
+                        String(warrantyExpirationDate.getMonth() + 1).padStart(2, '0')
+                    }-${String(warrantyExpirationDate.getDate()).padStart(2, '0')}`;
+                    
+                    // 显示丧失保修权益信息，使用与超期结果相同的样式
+                    warrantyStatusDisplay.textContent = `⚠️ 自${lastMaintenanceDate}起，超过13个月(${formattedExpirationDate})已丧失终身保修权益`;
+                    warrantyStatusDisplay.style.backgroundColor = '#fff2f0';
+                    warrantyStatusDisplay.style.border = '1px solid #ffccc7';
+                    warrantyStatusDisplay.style.color = '#c41e3a';
+                    warrantyStatusDisplay.style.padding = '10px';
+                    warrantyStatusDisplay.style.display = 'block';
+                } else {
+                    // 小于13个月时清空
+                    warrantyStatusDisplay.textContent = '';
+                    warrantyStatusDisplay.style.display = 'none';
+                }
+            } else {
+                // 没有保养记录时清空
+                warrantyStatusDisplay.textContent = '';
+                warrantyStatusDisplay.style.display = 'none';
             }
         }
     </script>

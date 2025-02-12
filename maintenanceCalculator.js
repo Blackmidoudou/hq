@@ -277,4 +277,50 @@ function calculateMaintenance(params) {
 }
 
 // 将函数添加到全局作用域
-window.calculateMaintenance = calculateMaintenance; 
+window.calculateMaintenance = calculateMaintenance;
+
+// 在计算按钮点击事件中添加
+calculateBtn.addEventListener('click', function() {
+    // ... 现有计算逻辑 ...
+
+    // 遍历所有记录项进行计算
+    const recordItems = document.querySelectorAll('.record-item');
+    
+    // 用于记录最后一次保养日期
+    let lastMaintenanceDate = null;
+
+    recordItems.forEach((item, index) => {
+        const cells = item.querySelectorAll('.record-cell');
+        const maintenanceDate = cells[2].textContent;
+
+        // 跳过无效日期的记录
+        if (maintenanceDate === '-') return;
+
+        // 更新最后一次保养日期
+        lastMaintenanceDate = maintenanceDate;
+    });
+
+    // 检查终身保修状态
+    const warrantyStatusDisplay = document.getElementById('warrantyStatusDisplay');
+    
+    if (lastMaintenanceDate) {
+        const hasLostWarranty = checkLifetimeWarranty(lastMaintenanceDate);
+        
+        if (hasLostWarranty) {
+            warrantyStatusDisplay.textContent = `⚠️ 车辆已丧失终身保修权益`;
+            // 可以添加额外的样式来突出显示
+            warrantyStatusDisplay.style.color = 'red';
+            warrantyStatusDisplay.style.fontWeight = 'bold';
+            // 确保显示
+            warrantyStatusDisplay.style.display = 'block';
+        } else {
+            // 如果没有超过13个月，清空内容并隐藏
+            warrantyStatusDisplay.textContent = '';
+            warrantyStatusDisplay.style.display = 'none';
+        }
+    } else {
+        // 没有保养记录时也隐藏
+        warrantyStatusDisplay.textContent = '';
+        warrantyStatusDisplay.style.display = 'none';
+    }
+}); 
