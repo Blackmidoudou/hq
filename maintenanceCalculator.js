@@ -155,8 +155,15 @@ function calculateMaintenance(params) {
                 };
             }
 
-            const dateDiff = calculateDateDiff(saleDate, maintenanceDate);
-            const overdueDays = isOverdue(dateDiff, config.月数);
+            // 计算从销售日期到规定保养期限的日期
+            const 规定日期 = new Date(saleDateTime);
+            规定日期.setMonth(规定日期.getMonth() + config.月数);
+            
+            // 计算实际超期天数
+            let overdueDays = 0;
+            if (currentDate > 规定日期) {
+                overdueDays = 计算实际天数(规定日期.toISOString().split('T')[0], maintenanceDate) + 1; // +1 包含开单当天
+            }
 
             let messages = [];
             if (overdueDays > 0) {
@@ -190,8 +197,16 @@ function calculateMaintenance(params) {
             }
 
             const config = 保养配置.燃油.例保;
-            const dateDiff = calculateDateDiff(previousMaintenanceDate, maintenanceDate);
-            const overdueDays = isOverdue(dateDiff, config.月数);
+            // 计算规定保养期限日期
+            const 规定日期 = new Date(prevDate);
+            规定日期.setMonth(规定日期.getMonth() + config.月数);
+
+            // 计算实际超期天数
+            let overdueDays = 0;
+            if (currentDate > 规定日期) {
+                overdueDays = 计算实际天数(规定日期.toISOString().split('T')[0], maintenanceDate) + 1; // +1 包含开单当天
+            }
+
             const mileageDiff = currentMileage - previousMileage;
 
             let messages = [];
@@ -214,10 +229,16 @@ function calculateMaintenance(params) {
         const config = 保养配置.电动;
         
         if (maintenanceCount === 1) {
-            // 首次保养，从销售日期开始计算
-            const dateDiff = calculateDateDiff(saleDate, maintenanceDate);
-            const overdueDays = isOverdue(dateDiff, config.月数);
-            
+            // 计算规定保养期限日期
+            const 规定日期 = new Date(saleDateTime);
+            规定日期.setMonth(规定日期.getMonth() + config.月数);
+
+            // 计算实际超期天数
+            let overdueDays = 0;
+            if (currentDate > 规定日期) {
+                overdueDays = 计算实际天数(规定日期.toISOString().split('T')[0], maintenanceDate) + 1;
+            }
+
             let messages = [];
             if (overdueDays > 0) {
                 messages.push(`超期 ${overdueDays} 天`);
