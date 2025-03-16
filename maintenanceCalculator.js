@@ -5,38 +5,18 @@ function 获取月份天数(年, 月) {
 
 // 计算两个日期之间的实际天数
 function 计算实际天数(开始日期, 结束日期) {
-    // 转换为日期对象
     const 开始 = new Date(开始日期);
     const 结束 = new Date(结束日期);
     
-    let 总天数 = 0;
-    let 当前日期 = new Date(开始);
+    // 将两个日期都设置为当天的0点以确保精确计算
+    开始.setHours(0, 0, 0, 0);
+    结束.setHours(0, 0, 0, 0);
     
-    // 逐月计算天数
-    while (当前日期 <= 结束) {
-        const 年 = 当前日期.getFullYear();
-        const 月 = 当前日期.getMonth();
-        const 当月天数 = 获取月份天数(年, 月);
-        
-        // 如果是开始月份，计算从开始日期到月底的天数
-        if (当前日期.getMonth() === 开始.getMonth() && 当前日期.getFullYear() === 开始.getFullYear()) {
-            总天数 += 当月天数 - 开始.getDate() + 1;
-        } 
-        // 如果是结束月份，计算从月初到结束日期的天数
-        else if (当前日期.getMonth() === 结束.getMonth() && 当前日期.getFullYear() === 结束.getFullYear()) {
-            总天数 += 结束.getDate();
-        } 
-        // 其他月份计算整月天数
-        else {
-            总天数 += 当月天数;
-        }
-        
-        // 移动到下一个月
-        当前日期.setMonth(当前日期.getMonth() + 1);
-        当前日期.setDate(1);
-    }
+    // 使用毫秒计算天数差
+    const 天数差毫秒 = 结束.getTime() - 开始.getTime();
+    const 天数 = Math.floor(天数差毫秒 / (1000 * 60 * 60 * 24));
     
-    return 总天数 - 1;
+    return 天数;
 }
 
 // 解析里程数：清理非数字字符并转换为整数
@@ -118,6 +98,27 @@ function isOverdue(dateDiff, configMonths) {
     return 0;
 }
 
+// 修改计算保养期限规定日期的方法
+function 计算规定保养日期(起始日期, 月数) {
+    const 起始 = new Date(起始日期);
+    const 规定日期 = new Date(起始);
+    
+    // 获取起始日期的天数
+    const 起始天数 = 起始.getDate();
+    
+    // 先设置月份
+    规定日期.setMonth(规定日期.getMonth() + 月数);
+    
+    // 检查月底问题
+    const 月底 = 获取月份天数(规定日期.getFullYear(), 规定日期.getMonth());
+    if (起始天数 > 月底) {
+        // 如果起始日期的天数超过了目标月份的最大天数，则设置为月底
+        规定日期.setDate(月底);
+    }
+    
+    return 规定日期;
+}
+
 function calculateMaintenance(params) {
     const {
         vehicleType,
@@ -197,14 +198,15 @@ function calculateMaintenance(params) {
             }
 
             const config = 保养配置.燃油.例保;
-            // 计算规定保养期限日期
-            const 规定日期 = new Date(prevDate);
-            规定日期.setMonth(规定日期.getMonth() + config.月数);
+            // 使用新的计算规定日期的函数
+            const 规定日期 = 计算规定保养日期(previousMaintenanceDate, config.月数);
 
             // 计算实际超期天数
             let overdueDays = 0;
             if (currentDate > 规定日期) {
-                overdueDays = 计算实际天数(规定日期.toISOString().split('T')[0], maintenanceDate) + 1; // +1 包含开单当天
+                // 使用精确的计算方法
+                const 规定日期字符串 = 规定日期.toISOString().split('T')[0];
+                overdueDays = 计算实际天数(规定日期字符串, maintenanceDate) + 1; // +1 包含开单当天
             }
 
             const mileageDiff = currentMileage - previousMileage;
@@ -270,8 +272,16 @@ function calculateMaintenance(params) {
                 };
             }
 
-            const dateDiff = calculateDateDiff(previousMaintenanceDate, maintenanceDate);
-            const overdueDays = isOverdue(dateDiff, config.月数);
+            // 计算规定保养期限日期
+            const 规定日期 = new Date(prevDate);
+            规定日期.setMonth(规定日期.getMonth() + config.月数);
+
+            // 计算实际超期天数
+            let overdueDays = 0;
+            if (currentDate > 规定日期) {
+                overdueDays = 计算实际天数(规定日期.toISOString().split('T')[0], maintenanceDate) + 1; // +1 包含开单当天
+            }
+
             const mileageDiff = currentMileage - previousMileage;
 
             let messages = [];
