@@ -915,11 +915,11 @@
                     const totalRecords = Array(records.length).fill(null);
                     
                     // 填充记录数据
-                    records.forEach((record, index) => { 
+                    records.forEach((record, index) => {
                         const mileage = record['进场里程'];
                         record['进场里程'] = mileage.toString();
                         totalRecords[index] = record;
-                        }
+                    });
 
                     // 创建记录项
                     totalRecords.forEach((record, index) => {
